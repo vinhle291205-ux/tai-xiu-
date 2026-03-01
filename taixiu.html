@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Tài Xỉu PRO MAX</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    background:linear-gradient(45deg,#000428,#004e92);
+    color:white;
+    text-align:center;
+}
+
+/* LOGIN */
+#loginBox{
+    margin-top:100px;
+}
+input{
+    padding:8px;
+    border-radius:5px;
+    border:none;
+    margin:5px;
+}
+button{
+    padding:10px 20px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:bold;
+}
+.tai{background:#2ecc71;}
+.xiu{background:#e74c3c;}
+.special{background:gold;color:black;}
+
+#game{
+    display:none;
+    padding:20px;
+}
+
+.dice-container{
+    perspective:800px;
+    display:flex;
+    justify-content:center;
+    gap:30px;
+    margin:20px;
+}
+
+.dice{
+    width:70px;
+    height:70px;
+    background:white;
+    color:black;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:30px;
+    border-radius:10px;
+    transform-style:preserve-3d;
+    transition:transform 1s;
+}
+
+.money{
+    font-size:20px;
+    margin:10px;
+}
+canvas{
+    background:white;
+    border-radius:10px;
+    margin-top:20px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="loginBox">
+    <h1>🎰 TÀI XỈU PRO 🎰</h1>
+    <input type="text" id="username" placeholder="Nhập tên...">
+    <br>
+    <button onclick="login()">Đăng nhập</button>
+</div>
+
+<!-- GAME -->
+<div id="game">
+
+<h2>Xin chào <span id="userDisplay"></span></h2>
+
+<div class="money">
+💰 Tiền: <span id="money">1000</span> xu
+</div>
+
+Cược: <input type="number" id="bet" value="100">
+
+<div class="dice-container">
+<div class="dice" id="dice1">🎲</div>
+<div class="dice" id="dice2">🎲</div>
+<div class="dice" id="dice3">🎲</div>
+</div>
+
+<button class="tai" onclick="play('tai')">Tài (11-18)</button>
+<button class="xiu" onclick="play('xiu')">Xỉu (3-10)</button>
+<button class="special" onclick="play('exact')">Cược Tổng = 10 (x3)</button>
+
+<h3 id="result"></h3>
+
+<canvas id="chart" width="300" height="200"></canvas>
+
+</div>
+
+<script>
+let money=1000;
+let taiCount=0;
+let xiuCount=0;
+let chart;
+
+function login(){
+    let user=document.getElementById("username").value;
+    if(user==""){alert("Nhập tên!");return;}
+
+    localStorage.setItem("user",user);
+    let savedMoney=localStorage.getItem("money");
+    if(savedMoney) money=parseInt(savedMoney);
+
+    document.getElementById("loginBox").style.display="none";
+    document.getElementById("game").style.display="block";
+    document.getElementById("userDisplay").innerText=user;
+    document.getElementById("money").innerText=money;
+
+    initChart();
+}
+
+function roll(){
+    return Math.floor(Math.random()*6)+1;
+}
+
+function animateDice(id){
+    let dice=document.getElementById(id);
+    dice.style.transform="rotateX(720deg) rotateY(720deg)";
+    setTimeout(()=>{
+        dice.style.transform="rotateX(0deg) rotateY(0deg)";
+    },1000);
+}
+
+function play(choice){
+    let bet=parseInt(document.getElementById("bet").value);
+    if(bet>money||bet<=0){alert("Cược không hợp lệ");return;}
+
+    let d1=roll();
+    let d2=roll();
+    let d3=roll();
+
+    animateDice("dice1");
+    animateDice("dice2");
+    animateDice("dice3");
+
+    setTimeout(()=>{
+        document.getElementById("dice1").innerText=d1;
+        document.getElementById("dice2").innerText=d2;
+        document.getElementById("dice3").innerText=d3;
+
+        let total=d1+d2+d3;
+        let resultType= total>=11 ? "tai":"xiu";
+
+        if(resultType=="tai") taiCount++;
+        else xiuCount++;
+
+        if(choice=="exact"){
+            if(total==10){
+                money+=bet*3;
+                result.innerText="🎉 Trúng EXACT x3!";
+            }else{
+                money-=bet;
+                result.innerText="😢 Thua cược đặc biệt";
+            }
+        }
+        else if(choice==resultType){
+            money+=bet;
+            result.innerText="🎉 Thắng!";
+        }else{
+            money-=bet;
+            result.innerText="😢 Thua!";
+        }
+
+        document.getElementById("money").innerText=money;
+        localStorage.setItem("money",money);
+        updateChart();
+
+    },1000);
+}
+
+function initChart(){
+    const ctx=document.getElementById('chart').getContext('2d');
+    chart=new Chart(ctx,{
+        type:'pie',
+        data:{
+            labels:['Tài','Xỉu'],
+            datasets:[{
+                data:[taiCount,xiuCount],
+                backgroundColor:['green','red']
+            }]
+        }
+    });
+}
+
+function updateChart(){
+    chart.data.datasets[0].data=[taiCount,xiuCount];
+    chart.update();
+}
+</script>
+
+</body>
+</html>
